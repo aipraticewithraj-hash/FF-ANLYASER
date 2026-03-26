@@ -1,0 +1,235 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>Free Fire IGL Analyzer</title>
+
+<style>
+body {
+  margin: 0;
+  font-family: 'Segoe UI', sans-serif;
+  background: radial-gradient(circle at top, #0f0f1a, #000);
+  color: white;
+  display: flex;
+}
+
+/* Sidebar */
+.sidebar {
+  width: 220px;
+  background: rgba(20,20,30,0.8);
+  backdrop-filter: blur(10px);
+  padding: 20px;
+  height: 100vh;
+  border-right: 1px solid #222;
+}
+
+.sidebar h2 {
+  color: #00f7ff;
+  text-shadow: 0 0 10px #00f7ff;
+}
+
+.sidebar button {
+  width: 100%;
+  margin: 10px 0;
+  padding: 12px;
+  background: transparent;
+  border: 1px solid #00f7ff;
+  color: white;
+  cursor: pointer;
+  transition: 0.3s;
+}
+
+.sidebar button:hover {
+  background: #00f7ff;
+  color: black;
+}
+
+/* Main */
+.main {
+  flex: 1;
+  padding: 20px;
+}
+
+/* Card */
+.card {
+  background: rgba(20,20,30,0.7);
+  backdrop-filter: blur(10px);
+  padding: 20px;
+  margin: 15px 0;
+  border-radius: 15px;
+  box-shadow: 0 0 20px rgba(0,255,255,0.2);
+}
+
+/* Inputs */
+input {
+  padding: 12px;
+  width: 60%;
+  margin: 5px;
+  border-radius: 10px;
+  border: none;
+}
+
+/* Button */
+button.analyze {
+  padding: 12px 25px;
+  background: linear-gradient(45deg, #00f7ff, #ff00c8);
+  border: none;
+  color: white;
+  font-weight: bold;
+  border-radius: 10px;
+  cursor: pointer;
+}
+
+/* Progress */
+.progress {
+  background: #222;
+  border-radius: 10px;
+  overflow: hidden;
+}
+
+.progress-bar {
+  height: 15px;
+  background: linear-gradient(90deg, #00f7ff, #ff00c8);
+}
+
+/* Hide */
+.hidden {
+  display: none;
+}
+</style>
+
+</head>
+
+<body>
+
+<div class="sidebar">
+  <h2>🎮 Gamer Hub</h2>
+  <button onclick="showSection('dashboard')">Analyzer</button>
+  <button onclick="showSection('history')">History</button>
+  <button onclick="showSection('leaderboard')">Leaderboard</button>
+</div>
+
+<div class="main">
+
+<div id="dashboard">
+  <h1>🔥 IGL Analyzer</h1>
+
+  <input id="uid" placeholder="Enter UID"><br>
+  <button class="analyze" onclick="analyze()">Analyze Player</button>
+
+  <p id="loading" class="hidden">Analyzing AI gameplay...</p>
+
+  <div id="result" class="card hidden"></div>
+</div>
+
+<div id="historySection" class="hidden">
+  <h1>History</h1>
+  <div id="history"></div>
+</div>
+
+<div id="leaderboardSection" class="hidden">
+  <h1>Leaderboard</h1>
+  <div id="leaderboard"></div>
+</div>
+
+</div>
+
+<script>
+
+function showSection(section) {
+  document.getElementById("dashboard").classList.add("hidden");
+  document.getElementById("historySection").classList.add("hidden");
+  document.getElementById("leaderboardSection").classList.add("hidden");
+
+  if (section === "dashboard") document.getElementById("dashboard").classList.remove("hidden");
+  if (section === "history") document.getElementById("historySection").classList.remove("hidden");
+  if (section === "leaderboard") document.getElementById("leaderboardSection").classList.remove("hidden");
+}
+
+function analyze() {
+  let uid = document.getElementById("uid").value;
+  if (!uid) return alert("Enter UID");
+
+  document.getElementById("loading").classList.remove("hidden");
+
+  setTimeout(() => {
+
+    // SMART FAKE STATS BASED ON UID
+    let seed = uid.split("").reduce((a,b)=>a+b.charCodeAt(0),0);
+
+    let kills = (seed % 10) + 2;
+    let damage = (seed * 3) % 2000;
+    let survival = (seed % 20) + 5;
+    let accuracy = ((seed % 100)/100);
+
+    let role = "Support";
+    let playstyle = "Balanced";
+
+    if (kills > 7 && survival < 10) {
+      role = "Rusher";
+      playstyle = "Aggressive";
+    } else if (accuracy > 0.5) {
+      role = "Sniper";
+      playstyle = "Passive";
+    } else if (damage > 1200) {
+      role = "IGL";
+      playstyle = "Balanced";
+    }
+
+    let score = Math.min(100, Math.floor(kills*10 + damage/50 + survival*2));
+
+    let tip = {
+      "Rusher": "Push fights but improve survival",
+      "Sniper": "Hold angles and aim better",
+      "Support": "Stay with team",
+      "IGL": "Control team and rotations"
+    }[role];
+
+    document.getElementById("result").innerHTML = `
+      <h2>${role}</h2>
+      <p>Playstyle: ${playstyle}</p>
+      <p>Score: ${score}</p>
+
+      <div class="progress">
+        <div class="progress-bar" style="width:${score}%"></div>
+      </div>
+
+      <p>Strategy: ${tip}</p>
+    `;
+
+    document.getElementById("result").classList.remove("hidden");
+    document.getElementById("loading").classList.add("hidden");
+
+    saveData(uid, role, score);
+    loadHistory(uid);
+    loadLeaderboard();
+
+  }, 1500);
+}
+
+function saveData(uid, role, score) {
+  let data = JSON.parse(localStorage.getItem("ffData")) || [];
+  data.push({ uid, role, score, date: new Date().toLocaleString() });
+  localStorage.setItem("ffData", JSON.stringify(data));
+}
+
+function loadHistory(uid) {
+  let data = JSON.parse(localStorage.getItem("ffData")) || [];
+  let userData = data.filter(d => d.uid === uid).slice(-5).reverse();
+
+  document.getElementById("history").innerHTML =
+    userData.map(d => `<div class="card">${d.role} | ${d.score}</div>`).join("");
+}
+
+function loadLeaderboard() {
+  let data = JSON.parse(localStorage.getItem("ffData")) || [];
+  data.sort((a,b)=>b.score-a.score);
+
+  document.getElementById("leaderboard").innerHTML =
+    data.slice(0,5).map((d,i)=>`<div class="card">#${i+1} ${d.uid} - ${d.score}</div>`).join("");
+}
+
+</script>
+
+</body>
+  </html>
